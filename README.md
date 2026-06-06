@@ -8,12 +8,11 @@
    - Ma trận 8x8 quản lý trạng thái, tính toán nước đi hợp lệ theo 8 hướng.
    - Hỗ trợ đổi lượt (turn switching), bỏ lượt (pass turn) và tính điểm cuối ván cờ.
 
-2. **5 Cấp độ thuật toán AI đối kháng**:
+2. **4 Cấp độ thuật toán AI đối kháng**:
    - **Cấp độ 1 (Baseline - Random)**: Chọn ngẫu nhiên nước đi hợp lệ.
    - **Cấp độ 2 (Greedy - Tham lam)**: Đi nước ăn được nhiều quân nhất ngay lập tức.
    - **Cấp độ 3 (Core - Pure Minimax)**: Duyệt cây đối kháng đầy đủ theo độ sâu.
    - **Cấp độ 4 (Optimized - Alpha-Beta Pruning)**: Cắt tỉa nhánh Alpha-Beta kết hợp với **Move Ordering** (sắp xếp thứ tự ưu tiên ô cờ trọng số cao để cắt tỉa tối đa cây tìm kiếm).
-   - **Cấp độ 5 (Out trình - Monte Carlo Tree Search)**: Sử dụng phương pháp mô phỏng ngẫu nhiên (rollout) kết hợp công thức UCB1 (Upper Confidence Bound 1) qua hàng trăm ván chơi thử để thống kê tỷ lệ thắng tối ưu.
 
 3. **Giao diện Desktop chuyên nghiệp (PyQt6)**:
    - Giao diện Dark Mode trực quan, mượt mà.

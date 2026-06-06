@@ -21,20 +21,19 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from backend.engine.constants import BOARD_SIZE, EMPTY, BLACK, WHITE, get_opponent
 from backend.engine.game import Game
-from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI, MCTSAI
+from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI
 from backend.ai.heuristics import POSITIONAL_WEIGHTS
 
 class AIWorker(QThread):
     """Worker Thread để tính toán nước đi AI, tránh đóng băng giao diện (GUI Freezing)"""
     move_found = pyqtSignal(tuple, dict)  # Trả về nước đi (row, col) và metrics hiệu năng
 
-    def __init__(self, board, player, algorithm, depth, simulations):
+    def __init__(self, board, player, algorithm, depth):
         super().__init__()
         self.board = board
         self.player = player
         self.algorithm = algorithm
         self.depth = depth
-        self.simulations = simulations
 
     def run(self):
         if self.algorithm == "Random":
@@ -46,9 +45,6 @@ class AIWorker(QThread):
             move, metrics = ai.get_best_move(self.board, self.player)
         elif self.algorithm == "Alpha-Beta":
             ai = AlphaBetaAI(max_depth=self.depth)
-            move, metrics = ai.get_best_move(self.board, self.player)
-        elif self.algorithm == "MCTS":
-            ai = MCTSAI(iterations=self.simulations)
             move, metrics = ai.get_best_move(self.board, self.player)
         else:
             move, metrics = None, {}
@@ -345,14 +341,14 @@ class OthelloApp(QMainWindow):
         # Đen (Player 1)
         config_layout.addWidget(QLabel("Quân Đen (Đi trước):"), 1, 0)
         self.combo_black_algo = QComboBox()
-        self.combo_black_algo.addItems(["Human", "Random", "Greedy", "Minimax", "Alpha-Beta", "MCTS"])
+        self.combo_black_algo.addItems(["Human", "Random", "Greedy", "Minimax", "Alpha-Beta"])
         self.combo_black_algo.currentIndexChanged.connect(self.on_players_changed)
         config_layout.addWidget(self.combo_black_algo, 1, 1)
 
         # Trắng (Player 2)
         config_layout.addWidget(QLabel("Quân Trắng (Đi sau):"), 2, 0)
         self.combo_white_algo = QComboBox()
-        self.combo_white_algo.addItems(["Human", "Random", "Greedy", "Minimax", "Alpha-Beta", "MCTS"])
+        self.combo_white_algo.addItems(["Human", "Random", "Greedy", "Minimax", "Alpha-Beta"])
         self.combo_white_algo.setCurrentText("Alpha-Beta")
         self.combo_white_algo.currentIndexChanged.connect(self.on_players_changed)
         config_layout.addWidget(self.combo_white_algo, 2, 1)
@@ -363,14 +359,6 @@ class OthelloApp(QMainWindow):
         self.spin_depth.setRange(1, 8)
         self.spin_depth.setValue(4)
         config_layout.addWidget(self.spin_depth, 3, 1)
-
-        # Cấu hình mô phỏng MCTS
-        config_layout.addWidget(QLabel("Mô phỏng MCTS:"), 4, 0)
-        self.spin_mcts_sim = QSpinBox()
-        self.spin_mcts_sim.setRange(100, 5000)
-        self.spin_mcts_sim.setSingleStep(100)
-        self.spin_mcts_sim.setValue(800)
-        config_layout.addWidget(self.spin_mcts_sim, 4, 1)
 
         right_layout.addWidget(config_group)
 
@@ -561,8 +549,7 @@ class OthelloApp(QMainWindow):
             board=self.game.board,
             player=current_player,
             algorithm=algo,
-            depth=self.spin_depth.value(),
-            simulations=self.spin_mcts_sim.value()
+            depth=self.spin_depth.value()
         )
         self.ai_worker.move_found.connect(self.handle_ai_move_result)
         self.ai_worker.start()

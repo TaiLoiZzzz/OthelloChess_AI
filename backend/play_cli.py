@@ -1,7 +1,7 @@
 import time
 from backend.engine.constants import BLACK, WHITE, EMPTY
 from backend.engine.game import Game
-from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI, MCTSAI
+from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI
 
 def print_board_with_moves(board, valid_moves):
     symbols = {EMPTY: '.', BLACK: 'X', WHITE: 'O'}
@@ -21,17 +21,15 @@ def main():
     print("Chế độ chơi:")
     print("1. Người chơi (X - Đen) vs Alpha-Beta AI (O - Trắng)")
     print("2. Pure Minimax AI (X - Đen) vs Alpha-Beta AI (O - Trắng) - ĐỂ BENCHMARK")
-    print("3. Alpha-Beta AI (X - Đen) vs MCTS AI (O - Trắng) - ĐỂ BENCHMARK")
-    print("4. Random AI (X - Đen) vs Greedy AI (O - Trắng)")
+    print("3. Random AI (X - Đen) vs Greedy AI (O - Trắng)")
     
-    choice = input("Lựa chọn (1-4): ").strip()
-    if choice not in ['1', '2', '3', '4']:
+    choice = input("Lựa chọn (1-3): ").strip()
+    if choice not in ['1', '2', '3']:
         choice = '1'
 
     game = Game()
     pure_minimax = MinimaxAI(max_depth=3) # Depth 3 cho pure minimax để không bị quá chậm
     alphabeta_ai = AlphaBetaAI(max_depth=4) # Depth 4 cho Alpha-Beta
-    mcts_ai = MCTSAI(iterations=800) # 800 iterations cho MCTS
     
     while not game.is_game_over:
         state = game.get_state()
@@ -74,23 +72,17 @@ def main():
                 if choice == '2':
                     move, metrics = pure_minimax.get_best_move(game.board, BLACK)
                     print(f"Pure Minimax AI (Depth 3) đi: {move} | Đã duyệt {metrics['nodes_expanded']} nodes trong {metrics['response_time_ms']}ms")
-                elif choice == '3':
-                    move, metrics = alphabeta_ai.get_best_move(game.board, BLACK)
-                    print(f"Alpha-Beta AI (Depth 4) đi: {move} | Đã duyệt {metrics['nodes_expanded']} nodes trong {metrics['response_time_ms']}ms")
-                else: # choice == '4'
+                else: # choice == '3'
                     move, metrics = RandomAI.get_best_move(game.board, BLACK)
                     print(f"Random AI đi: {move}")
             else:
                 # White AI
-                if choice == '4':
+                if choice == '3':
                     move, metrics = GreedyAI.get_best_move(game.board, WHITE)
                     print(f"Greedy AI đi: {move}")
                 elif choice == '2':
                     move, metrics = alphabeta_ai.get_best_move(game.board, WHITE)
                     print(f"Alpha-Beta AI (Depth 4) đi: {move} | Đã duyệt {metrics['nodes_expanded']} nodes trong {metrics['response_time_ms']}ms")
-                elif choice == '3':
-                    move, metrics = mcts_ai.get_best_move(game.board, WHITE)
-                    print(f"MCTS AI (800 Sim) đi: {move} | Đã mô phỏng {metrics['nodes_expanded']} ván trong {metrics['response_time_ms']}ms")
                 else: # choice == '1'
                     move, metrics = alphabeta_ai.get_best_move(game.board, WHITE)
                     print(f"Alpha-Beta AI (Depth 4) đi: {move} | Đã duyệt {metrics['nodes_expanded']} nodes trong {metrics['response_time_ms']}ms")

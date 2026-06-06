@@ -1,20 +1,11 @@
 import unittest
 from backend.engine.constants import BLACK, WHITE
 from backend.engine.board import Board
-from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI, MCTSAI
+from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI
 
 class TestAIModule(unittest.TestCase):
     def setUp(self):
         self.board = Board()
-
-    def test_mcts_ai(self):
-        """Test if MCTS AI returns a valid move and collects metrics"""
-        ai = MCTSAI(iterations=50) # Use small iterations for fast testing
-        move, metrics = ai.get_best_move(self.board, BLACK)
-        self.assertIsNotNone(move)
-        self.assertIn(move, self.board.get_valid_moves(BLACK))
-        self.assertIn('response_time_ms', metrics)
-        self.assertEqual(metrics['nodes_expanded'], 50) # 50 iterations = 50 expanded simulations
 
     def test_random_ai(self):
         """Test if Random AI returns a valid move"""
