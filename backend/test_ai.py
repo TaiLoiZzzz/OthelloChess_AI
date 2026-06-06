@@ -1,7 +1,7 @@
 import unittest
 from backend.engine.constants import BLACK, WHITE
 from backend.engine.board import Board
-from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI
+from backend.ai.algorithms import RandomAI, GreedyAI, MinimaxAI, AlphaBetaAI
 
 class TestAIModule(unittest.TestCase):
     def setUp(self):
@@ -26,15 +26,26 @@ class TestAIModule(unittest.TestCase):
         self.assertTrue(metrics['nodes_expanded'] >= len(self.board.get_valid_moves(BLACK)))
 
     def test_minimax_ai(self):
-        """Test if Minimax AI Alpha-Beta works correctly without crashing"""
+        """Test if Pure Minimax AI works correctly without crashing"""
         ai = MinimaxAI(max_depth=2)
         move, metrics = ai.get_best_move(self.board, BLACK)
         self.assertIsNotNone(move)
         self.assertIn(move, self.board.get_valid_moves(BLACK))
-        
-        # It should expand multiple nodes to search the tree
         self.assertTrue(metrics['nodes_expanded'] > 4) 
         self.assertIn('response_time_ms', metrics)
+
+    def test_alphabeta_ai(self):
+        """Test if Alpha-Beta AI works correctly and optimizes search space"""
+        # Search at depth 3 for both, pure minimax should expand more nodes than alpha-beta
+        pure_ai = MinimaxAI(max_depth=3)
+        ab_ai = AlphaBetaAI(max_depth=3)
+        
+        _, pure_metrics = pure_ai.get_best_move(self.board, BLACK)
+        _, ab_metrics = ab_ai.get_best_move(self.board, BLACK)
+        
+        # Alpha-Beta should expand strictly fewer nodes than pure minimax due to pruning
+        self.assertTrue(ab_metrics['nodes_expanded'] < pure_metrics['nodes_expanded'])
+        self.assertIn('response_time_ms', ab_metrics)
 
     def test_greedy_vs_random_sanity_check(self):
         """

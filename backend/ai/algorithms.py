@@ -56,12 +56,77 @@ class GreedyAI:
         return best_move, analytics.get_metrics()
 
 class MinimaxAI:
+    def __init__(self, max_depth=3):
+        # Pure Minimax is slower, so we use max_depth=3 by default
+        self.max_depth = max_depth
+        self.analytics = AIAnalytics()
+
+    def get_best_move(self, board, player):
+        """Finds the best move using Pure Minimax (no pruning)."""
+        self.analytics.start_timer()
+        opponent = get_opponent(player)
+        
+        best_score = float('-inf')
+        best_move = None
+        
+        valid_moves = board.get_valid_moves(player)
+        if not valid_moves:
+            self.analytics.stop_timer()
+            return None, self.analytics.get_metrics()
+            
+        for r, c in valid_moves:
+            self.analytics.increment_node()
+            new_board = board.apply_move(r, c, player)
+            if new_board:
+                score = self._minimax(new_board, self.max_depth - 1, False, player, opponent)
+                if score > best_score:
+                    best_score = score
+                    best_move = (r, c)
+                    
+        self.analytics.stop_timer()
+        return best_move, self.analytics.get_metrics()
+
+    def _minimax(self, board, depth, is_maximizing, ai_player, opponent):
+        """Recursive pure Minimax function."""
+        current_player = ai_player if is_maximizing else opponent
+        valid_moves = board.get_valid_moves(current_player)
+        
+        if depth == 0 or len(valid_moves) == 0:
+            if len(valid_moves) == 0 and len(board.get_valid_moves(get_opponent(current_player))) == 0:
+                pass # terminal state
+            else:
+                if len(valid_moves) == 0:
+                    # Pass turn
+                    return self._minimax(board, depth - 1, not is_maximizing, ai_player, opponent)
+                    
+            return evaluate_state(board, ai_player, opponent)
+
+        if is_maximizing:
+            max_eval = float('-inf')
+            for r, c in valid_moves:
+                self.analytics.increment_node()
+                new_board = board.apply_move(r, c, ai_player)
+                if new_board:
+                    eval = self._minimax(new_board, depth - 1, False, ai_player, opponent)
+                    max_eval = max(max_eval, eval)
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for r, c in valid_moves:
+                self.analytics.increment_node()
+                new_board = board.apply_move(r, c, opponent)
+                if new_board:
+                    eval = self._minimax(new_board, depth - 1, True, ai_player, opponent)
+                    min_eval = min(min_eval, eval)
+            return min_eval
+
+class AlphaBetaAI:
     def __init__(self, max_depth=4):
         self.max_depth = max_depth
         self.analytics = AIAnalytics()
 
     def get_best_move(self, board, player):
-        """Finds the best move using Minimax with Alpha-Beta Pruning."""
+        """Finds the best move using Minimax with Alpha-Beta Pruning and Move Ordering."""
         self.analytics.start_timer()
         opponent = get_opponent(player)
         
@@ -71,14 +136,11 @@ class MinimaxAI:
         beta = float('inf')
         
         valid_moves = board.get_valid_moves(player)
-        
         if not valid_moves:
             self.analytics.stop_timer()
             return None, self.analytics.get_metrics()
             
-        # Move Ordering: Evaluate corners first or use a shallow heuristic 
-        # to sort moves and improve alpha-beta pruning efficiency.
-        # For simplicity, we just sort by POSITIONAL_WEIGHTS loosely.
+        # Move Ordering: Sắp xếp các ô cờ có trọng số cao lên trước để duyệt trước
         from .heuristics import POSITIONAL_WEIGHTS
         valid_moves.sort(key=lambda m: POSITIONAL_WEIGHTS[m[0]][m[1]], reverse=True)
 
@@ -86,36 +148,29 @@ class MinimaxAI:
             self.analytics.increment_node()
             new_board = board.apply_move(r, c, player)
             if new_board:
-                score = self._minimax(new_board, self.max_depth - 1, alpha, beta, False, player, opponent)
-                
+                score = self._alphabeta(new_board, self.max_depth - 1, alpha, beta, False, player, opponent)
                 if score > best_score:
                     best_score = score
                     best_move = (r, c)
-                    
                 alpha = max(alpha, best_score)
                 
         self.analytics.stop_timer()
         return best_move, self.analytics.get_metrics()
 
-    def _minimax(self, board, depth, alpha, beta, is_maximizing, ai_player, opponent):
-        """Recursive Minimax function."""
-        # Check termination conditions: depth reached or game over
+    def _alphabeta(self, board, depth, alpha, beta, is_maximizing, ai_player, opponent):
+        """Recursive Minimax with Alpha-Beta pruning."""
         current_player = ai_player if is_maximizing else opponent
         valid_moves = board.get_valid_moves(current_player)
         
         if depth == 0 or len(valid_moves) == 0:
-            # Check if game is completely over (both have no moves)
             if len(valid_moves) == 0 and len(board.get_valid_moves(get_opponent(current_player))) == 0:
-                pass # terminal state
+                pass
             else:
                 if len(valid_moves) == 0:
-                    # Pass turn
-                    return self._minimax(board, depth - 1, alpha, beta, not is_maximizing, ai_player, opponent)
-                    
-            # Evaluate leaf node
+                    return self._alphabeta(board, depth - 1, alpha, beta, not is_maximizing, ai_player, opponent)
             return evaluate_state(board, ai_player, opponent)
 
-        # Optimization: Move ordering
+        # Move Ordering
         from .heuristics import POSITIONAL_WEIGHTS
         valid_moves.sort(key=lambda m: POSITIONAL_WEIGHTS[m[0]][m[1]], reverse=is_maximizing)
 
@@ -125,7 +180,7 @@ class MinimaxAI:
                 self.analytics.increment_node()
                 new_board = board.apply_move(r, c, ai_player)
                 if new_board:
-                    eval = self._minimax(new_board, depth - 1, alpha, beta, False, ai_player, opponent)
+                    eval = self._alphabeta(new_board, depth - 1, alpha, beta, False, ai_player, opponent)
                     max_eval = max(max_eval, eval)
                     alpha = max(alpha, eval)
                     if beta <= alpha:
@@ -137,7 +192,7 @@ class MinimaxAI:
                 self.analytics.increment_node()
                 new_board = board.apply_move(r, c, opponent)
                 if new_board:
-                    eval = self._minimax(new_board, depth - 1, alpha, beta, True, ai_player, opponent)
+                    eval = self._alphabeta(new_board, depth - 1, alpha, beta, True, ai_player, opponent)
                     min_eval = min(min_eval, eval)
                     beta = min(beta, eval)
                     if beta <= alpha:
